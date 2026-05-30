@@ -1,0 +1,49 @@
+<div class="dashboard-shell container py-5">
+  <div class="text-center mb-5">
+    <p class="text-uppercase text-muted mb-2">Admin Portal</p>
+    <h1 class="display-5 fw-bold">Business Management Dashboard</h1>
+    <p class="lead text-muted mx-auto mt-3" style="max-width: 640px;">
+      Choose a management area to continue. Product and Customer modules are lazy-loaded for performance and future expansion.
+    </p>
+  </div>
+
+  <div class="row gx-4 gy-4 justify-content-center">
+    <div class="col-12 col-md-6">
+      <a routerLink="/products" class="dashboard-card text-decoration-none">
+        <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white bg-primary">
+          <div class="card-body d-flex flex-column justify-content-between h-100">
+            <div>
+              <div class="icon-circle mb-4 bg-white bg-opacity-15 text-white">
+                <span class="fs-1">📦</span>
+              </div>
+              <h2 class="h4 fw-semibold">Product Management</h2>
+              <p class="mb-0 text-white-75">
+                Launch the product admin area to manage inventory, pricing, and catalog workflows.
+              </p>
+            </div>
+            <div class="mt-3 fw-semibold text-white">Go to Products →</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <a routerLink="/customers" class="dashboard-card text-decoration-none">
+        <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white bg-success">
+          <div class="card-body d-flex flex-column justify-content-between h-100">
+            <div>
+              <div class="icon-circle mb-4 bg-white bg-opacity-15 text-white">
+                <span class="fs-1">👥</span>
+              </div>
+              <h2 class="h4 fw-semibold">Customer Management</h2>
+              <p class="mb-0 text-white-75">
+                Open the customer workspace to build CRM features, customer records, and support workflows.
+              </p>
+            </div>
+            <div class="mt-3 fw-semibold text-white">Go to Customers →</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

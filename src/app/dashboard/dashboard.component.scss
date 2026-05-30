@@ -1,0 +1,32 @@
+.dashboard-shell {
+  min-height: calc(100vh - 4rem);
+}
+
+.dashboard-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1.5rem 2rem rgba(13, 110, 253, 0.18);
+}
+
+.dashboard-card:nth-child(2) .dashboard-card:hover {
+  box-shadow: 0 1.5rem 2rem rgba(25, 135, 84, 0.18);
+}
+
+.icon-circle {
+  width: 4rem;
+  height: 4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-shell {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
