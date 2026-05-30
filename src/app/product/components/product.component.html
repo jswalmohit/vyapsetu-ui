@@ -1,0 +1,189 @@
+﻿<div class="dashboard-page container py-5">
+  <div class="page-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted mb-2">Product Management</p>
+      <h1 class="h2 mb-0">Product Management</h1>
+    </div>
+    <button class="btn btn-primary btn-lg shadow-sm" type="button" (click)="openAddProduct()">
+      <i class="fa fa-plus me-2"></i>
+      Add Product
+    </button>
+  </div>
+
+  <div class="row gy-4">
+    <div class="col-12">
+      <div class="card shadow-sm rounded-4 border-0 overflow-hidden">
+        <div class="card-body p-4">
+          <div class="row gy-3 align-items-center mb-4">
+            <div class="col-12 col-md-6">
+              <div class="input-group input-group-lg">
+                <span class="input-group-text bg-white border-0 px-3"><i class="fa fa-search text-secondary"></i></span>
+                <input
+                  type="search"
+                  class="form-control border-0 shadow-none"
+                  placeholder="Search by Product Name or Product ID"
+                  [value]="searchTerm"
+                  (input)="onSearchChange($any($event.target).value)"
+                />
+              </div>
+            </div>
+            <div class="col-12 col-md-6 text-md-end">
+              <span class="text-muted">Showing {{ filteredProducts.length }} products</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-borderless align-middle mb-0">
+              <thead>
+                <tr class="text-muted small text-uppercase border-bottom">
+                  <th>Product Name</th>
+                  <th>Product ID</th>
+                  <th>Cost Price</th>
+                  <th>GST %</th>
+                  <th>Quantity</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let product of filteredProducts" class="product-row">
+                  <td>
+                    <div class="fw-semibold">{{ product.productName }}</div>
+                  </td>
+                  <td>{{ product.productId }}</td>
+                  <td>{{ product.costPrice | currency:'USD':'symbol':'1.2-2' }}</td>
+                  <td>{{ product.gst }}%</td>
+                  <td>{{ product.quantity }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-outline-secondary btn-sm me-2" type="button" (click)="openEditProduct(product)">
+                      <i class="fa fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" type="button" (click)="confirmDelete(product)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredProducts.length === 0">
+                  <td colspan="6" class="text-center py-5 text-muted">
+                    No products match your search. Try a different term or add a new product.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showProductModal" class="custom-modal">
+    <div class="modal-backdrop-custom"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg overflow-hidden">
+        <form [formGroup]="productForm" (ngSubmit)="saveProduct()">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h5 class="modal-title">{{ modalTitle }}</h5>
+              <p class="text-muted mb-0">Enter product details and save to add or update inventory.</p>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeProductModal()"></button>
+          </div>
+          <div class="modal-body pt-0">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Product Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="productName"
+                  [ngClass]="{ 'is-invalid': f.productName.invalid && (f.productName.touched || f.productName.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.productName.invalid && (f.productName.touched || f.productName.dirty)">
+                  Product Name is required.
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Product ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="productId"
+                  [ngClass]="{ 'is-invalid': f.productId.invalid && (f.productId.touched || f.productId.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.productId.invalid && (f.productId.touched || f.productId.dirty)">
+                  Product ID is required.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Cost Price</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="costPrice"
+                  min="0"
+                  step="0.01"
+                  [ngClass]="{ 'is-invalid': f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty)">
+                  Cost Price is required and must be a positive number.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">GST %</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="gst"
+                  min="0"
+                  step="0.01"
+                  [ngClass]="{ 'is-invalid': f.gst.invalid && (f.gst.touched || f.gst.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.gst.invalid && (f.gst.touched || f.gst.dirty)">
+                  GST percentage is required and must be a valid number.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Quantity</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="quantity"
+                  min="0"
+                  step="1"
+                  [ngClass]="{ 'is-invalid': f.quantity.invalid && (f.quantity.touched || f.quantity.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.quantity.invalid && (f.quantity.touched || f.quantity.dirty)">
+                  Quantity is required and must be a non-negative number.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary" (click)="closeProductModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="productForm.invalid">
+              Save Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showDeleteModal" class="custom-modal">
+    <div class="modal-backdrop-custom"></div>
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg border-0 overflow-hidden">
+        <div class="modal-body py-4 text-center">
+          <div class="mb-3 display-6 text-danger"><i class="fa fa-exclamation-triangle"></i></div>
+          <h5 class="mb-3">Delete product?</h5>
+          <p class="text-muted mb-4">
+            Are you sure you want to remove <strong>{{ deleteTarget?.productName }}</strong> from inventory?
+          </p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button class="btn btn-outline-secondary" type="button" (click)="closeDeleteModal()">Cancel</button>
+            <button class="btn btn-danger" type="button" (click)="deleteProduct()">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
