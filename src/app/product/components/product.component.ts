@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { Product } from '../models/product.model';
+import { LoadingService } from '../../services/loading.service';
 
 @Component({
   standalone: false,
@@ -20,10 +21,15 @@ export class ProductComponent implements OnInit {
   showProductModal = false;
   showDeleteModal = false;
   deleteTarget?: Product;
+  // Action-level loading observables (initialized in constructor)
+  saveAction$ = null as unknown as import('rxjs').Observable<boolean>;
+  deleteAction$ = null as unknown as import('rxjs').Observable<boolean>;
 
   constructor(
     private fb: FormBuilder,
-    private productService: ProductService
+    private productService: ProductService,
+    private cd: ChangeDetectorRef,
+    private loading: LoadingService
   ) {
     this.productForm = this.fb.group({
       productName: ['', Validators.required],
@@ -32,6 +38,9 @@ export class ProductComponent implements OnInit {
       gst: [null, [Validators.required, Validators.min(0)]],
       quantity: [null, [Validators.required, Validators.min(0)]]
     });
+
+    this.saveAction$ = this.loading.actionStatus$('saveProduct');
+    this.deleteAction$ = this.loading.actionStatus$('deleteProduct');
   }
 
   ngOnInit(): void {
@@ -47,9 +56,11 @@ export class ProductComponent implements OnInit {
       next: (products) => {
         this.products = products;
         this.applyFilter();
+        this.cd.detectChanges();
       },
       error: (error) => {
         console.error('Error loading products:', error);
+        this.cd.detectChanges();
       }
     });
   }
@@ -107,37 +118,47 @@ export class ProductComponent implements OnInit {
     const formValue = this.productForm.value;
 
     if (this.isEditMode && this.activeProductId != null) {
-      this.productService.updateProduct(this.activeProductId, {
+      this.loading
+        .track(
+          this.productService.updateProduct(this.activeProductId, {
         productName: formValue.productName,
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
         quantity: Number(formValue.quantity)
-      }).subscribe({
-        next: () => {
-          this.loadProducts();
-          this.closeProductModal();
-        },
-        error: (error) => {
-          console.error('Error updating product:', error);
-        }
-      });
+          }),
+          'saveProduct'
+        )
+        .subscribe({
+          next: () => {
+            this.loadProducts();
+            this.closeProductModal();
+          },
+          error: (error) => {
+            console.error('Error updating product:', error);
+          }
+        });
     } else {
-      this.productService.addProduct({
+      this.loading
+        .track(
+          this.productService.addProduct({
         productName: formValue.productName,
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
         quantity: Number(formValue.quantity)
-      }).subscribe({
-        next: () => {
-          this.loadProducts();
-          this.closeProductModal();
-        },
-        error: (error) => {
-          console.error('Error adding product:', error);
-        }
-      });
+          }),
+          'saveProduct'
+        )
+        .subscribe({
+          next: () => {
+            this.loadProducts();
+            this.closeProductModal();
+          },
+          error: (error) => {
+            console.error('Error adding product:', error);
+          }
+        });
     }
   }
 
@@ -150,15 +171,17 @@ export class ProductComponent implements OnInit {
     if (!this.deleteTarget) {
       return;
     }
-    this.productService.deleteProduct(this.deleteTarget.id).subscribe({
-      next: () => {
-        this.loadProducts();
-        this.closeDeleteModal();
-      },
-      error: (error) => {
-        console.error('Error deleting product:', error);
-      }
-    });
+    this.loading
+      .track(this.productService.deleteProduct(this.deleteTarget.id), 'deleteProduct')
+      .subscribe({
+        next: () => {
+          this.loadProducts();
+          this.closeDeleteModal();
+        },
+        error: (error) => {
+          console.error('Error deleting product:', error);
+        }
+      });
   }
 
   closeDeleteModal(): void {

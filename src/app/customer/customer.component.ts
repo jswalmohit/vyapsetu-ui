@@ -4,6 +4,7 @@ import { CustomerService } from './services/customer.service';
 import { Customer } from './models/customer.model';
 import { ProductService } from '../product/services/product.service';
 import { Product } from '../product/models/product.model';
+import { LoadingService } from '../services/loading.service';
 
 interface CartItem {
   product: Product;
@@ -32,17 +33,22 @@ export class CustomerComponent implements OnInit {
   products: Product[] = [];
   filteredProducts: Product[] = [];
   productSearch = '';
+  loadingProducts = true;
 
   // Cart
   cart: CartItem[] = [];
 
   // Bill
   showBill = false;
+  // button-level actions
+  fetchAction$ = null as unknown as import('rxjs').Observable<boolean>;
+  createAction$ = null as unknown as import('rxjs').Observable<boolean>;
 
   constructor(
     private fb: FormBuilder,
     private customerService: CustomerService,
     private productService: ProductService
+    ,private loading: LoadingService
   ) {
     this.fetchForm = this.fb.group({
       mobile: ['', [Validators.required, Validators.minLength(6)]]
@@ -53,13 +59,19 @@ export class CustomerComponent implements OnInit {
       address: ['', Validators.required],
       mobile: ['', Validators.required]
     });
+
+    this.fetchAction$ = this.loading.actionStatus$('fetchCustomer');
+    this.createAction$ = this.loading.actionStatus$('createCustomer');
   }
 
   ngOnInit(): void {
     // load products from ProductService
     this.productService.getProducts().subscribe((products) => {
       this.products = products;
-      this.filteredProducts = [...this.products];
+      this.loadingProducts = false;
+      this.applyProductFilter();
+    }, () => {
+      this.loadingProducts = false;
     });
 
     // modal opens automatically; modalState defaults to 'fetch'
@@ -69,15 +81,17 @@ export class CustomerComponent implements OnInit {
   fetchCustomer(): void {
     const mobile = this.fetchForm.value.mobile?.toString().trim();
     if (!mobile) return;
-    this.customerService.fetchByMobile(mobile).subscribe((cust) => {
-      if (cust) {
-        this.customer = cust;
-        this.modalState = 'found';
-      } else {
-        this.modalState = 'register';
-        this.registerForm.patchValue({ mobile });
-      }
-    });
+    this.loading
+      .track(this.customerService.fetchByMobile(mobile), 'fetchCustomer')
+      .subscribe((cust) => {
+        if (cust) {
+          this.customer = cust;
+          this.modalState = 'found';
+        } else {
+          this.modalState = 'register';
+          this.registerForm.patchValue({ mobile });
+        }
+      });
   }
 
   // Create new customer
@@ -87,14 +101,19 @@ export class CustomerComponent implements OnInit {
       return;
     }
     const data = this.registerForm.value;
-    this.customerService.createCustomer({
-      name: data.name,
-      address: data.address,
-      mobile: data.mobile
-    }).subscribe((created) => {
-      this.customer = created;
-      this.closeModal();
-    });
+    this.loading
+      .track(
+        this.customerService.createCustomer({
+          name: data.name,
+          address: data.address,
+          mobile: data.mobile
+        }),
+        'createCustomer'
+      )
+      .subscribe((created) => {
+        this.customer = created;
+        this.closeModal();
+      });
   }
 
   continueShopping(): void {
@@ -120,11 +139,18 @@ export class CustomerComponent implements OnInit {
 
   // Product search
   onProductSearch(value: string): void {
-    this.productSearch = value.toLowerCase().trim();
-    this.filteredProducts = this.products.filter((p) =>
-      p.productName.toLowerCase().includes(this.productSearch) ||
-      p.productId.toLowerCase().includes(this.productSearch)
-    );
+    this.productSearch = (value ?? '').toLowerCase().trim();
+    this.applyProductFilter();
+  }
+
+  private applyProductFilter(): void {
+    const search = this.productSearch;
+    this.filteredProducts = search
+      ? this.products.filter((p) =>
+          p.productName.toLowerCase().includes(search) ||
+          p.productId.toLowerCase().includes(search)
+        )
+      : [...this.products];
   }
 
   // Cart operations
