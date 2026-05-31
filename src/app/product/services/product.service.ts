@@ -1,57 +1,61 @@
 ﻿import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Product } from '../models/product.model';
+import { environment } from '../../../environments/environment';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string | null;
+  data: T;
+  errors: any;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
-  private products: Product[] = [
-    {
-      id: 1,
-      productName: 'Wireless Keyboard',
-      productId: 'KB-1001',
-      costPrice: 42.5,
-      gst: 18,
-      quantity: 34
-    },
-    {
-      id: 2,
-      productName: 'Bluetooth Mouse',
-      productId: 'MS-2002',
-      costPrice: 28.75,
-      gst: 18,
-      quantity: 47
-    },
-    {
-      id: 3,
-      productName: 'USB-C Hub',
-      productId: 'HB-3003',
-      costPrice: 65.0,
-      gst: 12,
-      quantity: 19
-    }
-  ];
+  private readonly PRODUCT_ENDPOINT = '/api/Products';
+  private apiUrl = `${environment.baseUrl}${this.PRODUCT_ENDPOINT}`;
 
-  getProducts(): Product[] {
-    return [...this.products];
+  // In-memory data for demo
+  private products: Product[] = [];
+
+  constructor(private http: HttpClient) {}
+
+  // Get all products
+  // API: GET /api/products
+  getProducts(): Observable<Product[]> {
+    return this.http
+      .get<ApiResponse<Product[]>>(`${this.apiUrl}`)
+      .pipe(map((response) => response.data));
   }
 
-  addProduct(data: Omit<Product, 'id'>): void {
-    const nextId = this.products.length
-      ? Math.max(...this.products.map((product) => product.id)) + 1
-      : 1;
-
-    this.products = [...this.products, { id: nextId, ...data }];
+  // Get product by ID
+  // API: GET /api/products/:id
+  getProductById(id: number): Observable<Product> {
+    return this.http
+      .get<ApiResponse<Product>>(`${this.apiUrl}/${id}`)
+      .pipe(map((response) => response.data));
   }
 
-  updateProduct(updatedProduct: Product): void {
-    this.products = this.products.map((product) =>
-      product.id === updatedProduct.id ? { ...updatedProduct } : product
-    );
+  // Add new product
+  // API: POST /api/products
+  addProduct(data: Omit<Product, 'id'>): Observable<Product> {
+    return this.http.post<Product>(`${this.apiUrl}`, data);
   }
 
-  deleteProduct(id: number): void {
-    this.products = this.products.filter((product) => product.id !== id);
+  // Update product
+  // API: PUT /api/products/:id
+  updateProduct(id: number, data: Omit<Product, 'id'>): Observable<Product> {
+    return this.http.put<Product>(`${this.apiUrl}/${id}`, data);
+  }
+
+  // Delete product
+  // API: DELETE /api/products/:id
+  deleteProduct(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }
 
