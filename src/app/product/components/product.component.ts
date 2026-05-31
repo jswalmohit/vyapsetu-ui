@@ -43,8 +43,15 @@ export class ProductComponent implements OnInit {
   }
 
   loadProducts(): void {
-    this.products = this.productService.getProducts();
-    this.applyFilter();
+    this.productService.getProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+        this.applyFilter();
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+      }
+    });
   }
 
   applyFilter(): void {
@@ -100,13 +107,20 @@ export class ProductComponent implements OnInit {
     const formValue = this.productForm.value;
 
     if (this.isEditMode && this.activeProductId != null) {
-      this.productService.updateProduct({
-        id: this.activeProductId,
+      this.productService.updateProduct(this.activeProductId, {
         productName: formValue.productName,
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
         quantity: Number(formValue.quantity)
+      }).subscribe({
+        next: () => {
+          this.loadProducts();
+          this.closeProductModal();
+        },
+        error: (error) => {
+          console.error('Error updating product:', error);
+        }
       });
     } else {
       this.productService.addProduct({
@@ -115,11 +129,16 @@ export class ProductComponent implements OnInit {
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
         quantity: Number(formValue.quantity)
+      }).subscribe({
+        next: () => {
+          this.loadProducts();
+          this.closeProductModal();
+        },
+        error: (error) => {
+          console.error('Error adding product:', error);
+        }
       });
     }
-
-    this.loadProducts();
-    this.closeProductModal();
   }
 
   confirmDelete(product: Product): void {
@@ -131,9 +150,15 @@ export class ProductComponent implements OnInit {
     if (!this.deleteTarget) {
       return;
     }
-    this.productService.deleteProduct(this.deleteTarget.id);
-    this.loadProducts();
-    this.closeDeleteModal();
+    this.productService.deleteProduct(this.deleteTarget.id).subscribe({
+      next: () => {
+        this.loadProducts();
+        this.closeDeleteModal();
+      },
+      error: (error) => {
+        console.error('Error deleting product:', error);
+      }
+    });
   }
 
   closeDeleteModal(): void {
