@@ -50,7 +50,7 @@
                     <div class="fw-semibold">{{ product.productName }}</div>
                   </td>
                   <td>{{ product.productId }}</td>
-                  <td>{{ product.costPrice | currency:'USD':'symbol':'1.2-2' }}</td>
+                  <td>{{ product.costPrice | currency:'INR':'symbol':'1.2-2' }}</td>
                   <td>{{ product.gst }}%</td>
                   <td>{{ product.quantity }}</td>
                   <td class="text-end">
@@ -134,7 +134,7 @@
                   class="form-control"
                   formControlName="gst"
                   min="0"
-                  step="0.01"
+                  step="0.1"
                   [ngClass]="{ 'is-invalid': f.gst.invalid && (f.gst.touched || f.gst.dirty) }"
                 />
                 <div class="invalid-feedback" *ngIf="f.gst.invalid && (f.gst.touched || f.gst.dirty)">

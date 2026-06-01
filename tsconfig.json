@@ -14,6 +14,7 @@
     "enableI18nLegacyMessageIdFormat": false
   },
   "files": [],
+  "exclude": ["node_modules"],
   "references": [
     {
       "path": "./tsconfig.app.json"
