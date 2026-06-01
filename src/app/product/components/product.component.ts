@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { Product } from '../models/product.model';
@@ -29,13 +29,13 @@ export class ProductComponent implements OnInit {
     private fb: FormBuilder,
     private productService: ProductService,
     private cd: ChangeDetectorRef,
-    private loading: LoadingService
+    @Inject(LoadingService) private loading: LoadingService
   ) {
     this.productForm = this.fb.group({
       productName: ['', Validators.required],
       productId: ['', Validators.required],
       costPrice: [null, [Validators.required, Validators.min(0)]],
-      gst: [null, [Validators.required, Validators.min(0)]],
+      gst: [18, [Validators.required, Validators.min(0)]],
       quantity: [null, [Validators.required, Validators.min(0)]]
     });
 
@@ -85,7 +85,9 @@ export class ProductComponent implements OnInit {
     this.modalTitle = 'Add Product';
     this.isEditMode = false;
     this.activeProductId = undefined;
-    this.productForm.reset();
+     this.productForm.reset({
+    gst: 18
+    });
     this.productForm.markAsUntouched();
     this.productForm.markAsPristine();
     this.showProductModal = true;
