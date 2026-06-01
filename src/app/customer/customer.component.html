@@ -1,4 +1,9 @@
 ﻿<div class="container py-5 dashboard-page">
+  <!-- Notifications -->
+  <div *ngIf="notificationMessage" class="alert" [ngClass]="notificationType === 'success' ? 'alert-success' : 'alert-danger'" role="alert">
+    {{ notificationMessage }}
+  </div>
+
   <!-- Customer Profile Card -->
   <div *ngIf="customer" class="card mb-4 shadow-sm rounded-4 p-3">
     <div class="d-flex justify-content-between align-items-start">
@@ -24,7 +29,9 @@
           </div>
         </div>
 
-        <div *ngIf="filteredProducts.length > 0" class="list-group list-group-flush">
+        <div *ngIf="loadingProducts" class="text-center p-3 text-muted">Loading products...</div>
+
+        <div *ngIf="!loadingProducts && filteredProducts.length > 0" class="list-group list-group-flush">
           <div *ngFor="let p of filteredProducts" class="list-group-item d-flex justify-content-between align-items-center">
             <div>
               <div class="fw-semibold">{{ p.productName }}</div>
@@ -37,7 +44,7 @@
           </div>
         </div>
 
-        <div *ngIf="filteredProducts.length === 0" class="text-center p-3 text-muted">No products found.</div>
+        <div *ngIf="!loadingProducts && filteredProducts.length === 0" class="text-center p-3 text-muted">No products found.</div>
       </div>
     </div>
 
@@ -116,47 +123,75 @@
         <div class="modal-body p-4">
           <div *ngIf="modalState === 'fetch'">
             <h5 class="mb-3">Find Customer</h5>
-            <div class="mb-3">
-              <label class="form-label small">Mobile Number</label>
-              <input class="form-control" formControlName="mobile" [(ngModel)]="fetchForm.value.mobile" />
-            </div>
-            <div class="d-flex gap-2 justify-content-end">
-              <button class="btn btn-primary" (click)="fetchCustomer()">Fetch Customer</button>
-            </div>
+            <form [formGroup]="fetchForm" (ngSubmit)="fetchCustomer()" novalidate>
+              <div class="mb-3">
+                <label class="form-label small" for="mobile">Mobile Number</label>
+                <input
+                  id="mobile"
+                  class="form-control"
+                  type="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                  maxlength="10"
+                  formControlName="mobile"
+                  (input)="onMobileInput($event)"
+                  (paste)="onMobilePaste($event)"
+                />
+                <div class="invalid-feedback d-block" *ngIf="mobileControl.touched && mobileControl.invalid">
+                  <div *ngIf="mobileControl.hasError('required')">Phone number is required.</div>
+                  <div *ngIf="mobileControl.hasError('pattern') || mobileControl.hasError('minlength') || mobileControl.hasError('maxlength')">
+                    Phone number must be exactly 10 digits.
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-primary" [disabled]="fetchForm.invalid || (fetchAction$ | async)">
+                  <span *ngIf="(fetchAction$ | async)" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Fetch Customer
+                </button>
+              </div>
+            </form>
           </div>
 
           <div *ngIf="modalState === 'found'">
             <h5 class="mb-2">Customer Found</h5>
-            <div class="small text-muted">{{ customer?.name }}</div>
-            <div class="small text-muted">{{ customer?.mobile }}</div>
-            <div class="small text-muted mb-3">{{ customer?.address }}</div>
+            <div *ngIf="matchingCustomers.length > 1" class="mb-3">
+              <div class="small text-muted mb-2">Multiple customers match this phone number. Select one to continue.</div>
+              <div class="list-group list-group-flush">
+                <button
+                  type="button"
+                  class="list-group-item list-group-item-action"
+                  *ngFor="let cust of matchingCustomers"
+                  (click)="selectCustomer(cust)"
+                >
+                  <div class="fw-semibold">{{ cust.name }}</div>
+                  <div class="small text-muted">{{ cust.mobile }} • {{ cust.address }}</div>
+                </button>
+              </div>
+            </div>
+            <div *ngIf="customer" class="mb-3">
+              <div class="small text-muted">{{ customer.name }}</div>
+              <div class="small text-muted">{{ customer.mobile }}</div>
+              <div class="small text-muted">{{ customer.address }}</div>
+            </div>
             <div class="d-flex gap-2 justify-content-end">
               <button class="btn btn-secondary" (click)="editProfile()">Edit</button>
               <button class="btn btn-primary" (click)="continueShopping()">Continue Shopping</button>
             </div>
           </div>
 
-          <div *ngIf="modalState === 'register'">
-            <h5 class="mb-3">Create Customer Profile</h5>
-            <form (ngSubmit)="createCustomer()">
-              <div class="mb-2">
-                <label class="form-label small">Customer Name</label>
-                <input class="form-control" formControlName="name" [(ngModel)]="registerForm.value.name" />
-              </div>
-              <div class="mb-2">
-                <label class="form-label small">Address</label>
-                <input class="form-control" formControlName="address" [(ngModel)]="registerForm.value.address" />
-              </div>
-              <div class="mb-2">
-                <label class="form-label small">Mobile Number</label>
-                <input class="form-control" formControlName="mobile" [(ngModel)]="registerForm.value.mobile" />
-              </div>
-
-              <div class="d-flex gap-2 justify-content-end">
-                <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Create Customer Profile</button>
-              </div>
-            </form>
+          <div *ngIf="modalState === 'register' || modalState === 'profile'">
+            <h5 class="mb-3">{{ modalState === 'register' ? 'Create Customer Profile' : 'Edit Customer Profile' }}</h5>
+            <app-customer-registration-dialog
+              [initialPhone]="registrationPhone"
+              [initialAddress]="customer?.address"
+              [mode]="modalState === 'register' ? 'register' : 'edit'"
+              [isLoading]="createAction$ | async"
+              [errorMessage]="dialogErrorMessage"
+              (save)="handleDialogSave($event)"
+              (cancel)="closeModal()"
+            ></app-customer-registration-dialog>
           </div>
         </div>
       </div>

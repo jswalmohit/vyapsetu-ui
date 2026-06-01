@@ -7,6 +7,9 @@
           <a class="btn btn-outline-primary btn-sm" routerLink="/dashboard">Dashboard</a>
           <a class="btn btn-outline-secondary btn-sm" routerLink="/products">Products</a>
           <a class="btn btn-outline-secondary btn-sm" routerLink="/customers">Customers</a>
+          <span class="ms-2 align-self-center small text-primary" *ngIf="loading$ | async">
+            <i class="fa fa-spinner fa-spin me-1"></i>Loading
+          </span>
         </div>
       </div>
     </nav>
@@ -14,5 +17,6 @@
 
   <main class="py-4">
     <router-outlet></router-outlet>
+    <app-loader></app-loader>
   </main>
 </div>
