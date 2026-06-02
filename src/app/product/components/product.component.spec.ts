@@ -40,8 +40,8 @@ describe('ProductComponent', () => {
 
   it('should filter products based on search term', () => {
     component.products = [
-      { id: 1, productName: 'Widget', productId: 'W1', costPrice: 100, gst: 5, quantity: 1 },
-      { id: 2, productName: 'Gadget', productId: 'G1', costPrice: 200, gst: 5, quantity: 1 }
+      { id: 1, productName: 'Widget', productId: 'W1', costPrice: 100, gst: 5, quantity: 1, purchaseDate: '2026-06-02' },
+      { id: 2, productName: 'Gadget', productId: 'G1', costPrice: 200, gst: 5, quantity: 1, purchaseDate: '2026-06-02' }
     ];
     component.onSearchChange('gad');
 
@@ -58,7 +58,7 @@ describe('ProductComponent', () => {
   });
 
   it('should open edit product modal with prefilled form', () => {
-    const product = { id: 3, productName: 'Tool', productId: 'T3', costPrice: 50, gst: 12, quantity: 2 };
+    const product = { id: 3, productName: 'Tool', productId: 'T3', costPrice: 50, gst: 12, quantity: 2, purchaseDate: '2026-06-02' };
 
     component.openEditProduct(product);
 
@@ -80,8 +80,8 @@ describe('ProductComponent', () => {
 
   it('should add new product and refresh list', () => {
     component.openAddProduct();
-    component.productForm.setValue({ productName: 'New', productId: 'N1', costPrice: 10, gst: 5, quantity: 1 });
-    productService.addProduct.mockReturnValue(of({ id: 4, productName: 'New', productId: 'N1', costPrice: 10, gst: 5, quantity: 1 }));
+    component.productForm.setValue({ productName: 'New', productId: 'N1', costPrice: 10, gst: 5, quantity: 1, purchaseDate: '2026-06-02' });
+    productService.addProduct.mockReturnValue(of({ id: 4, productName: 'New', productId: 'N1', costPrice: 10, gst: 5, quantity: 1, purchaseDate: '2026-06-02' }));
     vi.spyOn(component, 'loadProducts');
 
     component.saveProduct();
@@ -92,8 +92,8 @@ describe('ProductComponent', () => {
   });
 
   it('should update product when edit mode is enabled', () => {
-    component.openEditProduct({ id: 5, productName: 'Edit', productId: 'E5', costPrice: 15, gst: 5, quantity: 1 });
-    productService.updateProduct.mockReturnValue(of({ id: 5, productName: 'Edit', productId: 'E5', costPrice: 15, gst: 5, quantity: 1 }));
+    component.openEditProduct({ id: 5, productName: 'Edit', productId: 'E5', costPrice: 15, gst: 5, quantity: 1, purchaseDate: '2026-06-02' });
+    productService.updateProduct.mockReturnValue(of({ id: 5, productName: 'Edit', productId: 'E5', costPrice: 15, gst: 5, quantity: 1, purchaseDate: '2026-06-02' }));
     vi.spyOn(component, 'loadProducts');
 
     component.saveProduct();
@@ -103,7 +103,7 @@ describe('ProductComponent', () => {
   });
 
   it('should confirm delete and remove the selected product', () => {
-    const product = { id: 6, productName: 'Trash', productId: 'T6', costPrice: 20, gst: 5, quantity: 1 };
+    const product = { id: 6, productName: 'Trash', productId: 'T6', costPrice: 20, gst: 5, quantity: 1, purchaseDate: '2026-06-02' };
     component.confirmDelete(product);
 
     expect(component.deleteTarget).toBe(product);

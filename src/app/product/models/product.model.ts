@@ -5,5 +5,6 @@
   costPrice: number;
   gst: number;
   quantity: number;
+  purchaseDate: string;
 }
 

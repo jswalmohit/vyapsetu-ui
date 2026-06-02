@@ -34,7 +34,7 @@ export class CustomerService {
   // Create a new customer
   // API: POST /api/customers/CreateCustomer
   createCustomer(data: CreateCustomerRequest): Observable<Customer> {
-    return this.http.post<Customer>(`${this.apiUrl}/CreateCustomer`, data);
+    return this.http.post<Customer>(`${this.apiUrl}`, data);
   }
 
   // Get all customers

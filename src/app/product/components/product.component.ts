@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { Product } from '../models/product.model';
 import { LoadingService } from '../../services/loading.service';
@@ -24,6 +24,7 @@ export class ProductComponent implements OnInit {
   // Action-level loading observables (initialized in constructor)
   saveAction$ = null as unknown as import('rxjs').Observable<boolean>;
   deleteAction$ = null as unknown as import('rxjs').Observable<boolean>;
+  today: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -31,12 +32,14 @@ export class ProductComponent implements OnInit {
     private cd: ChangeDetectorRef,
     @Inject(LoadingService) private loading: LoadingService
   ) {
+    this.today = this.getTodayDateString();
     this.productForm = this.fb.group({
       productName: ['', Validators.required],
       productId: ['', Validators.required],
       costPrice: [null, [Validators.required, Validators.min(0)]],
       gst: [18, [Validators.required, Validators.min(0)]],
-      quantity: [null, [Validators.required, Validators.min(0)]]
+      quantity: [null, [Validators.required, Validators.min(0)]],
+      purchaseDate: [this.today, [Validators.required, this.maxDateValidator(this.today)]]
     });
 
     this.saveAction$ = this.loading.actionStatus$('saveProduct');
@@ -49,6 +52,21 @@ export class ProductComponent implements OnInit {
 
   get f() {
     return this.productForm.controls;
+  }
+
+  private getTodayDateString(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private maxDateValidator(maxDate: string) {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) {
+        return null;
+      }
+      const controlDate = new Date(control.value);
+      const max = new Date(maxDate);
+      return controlDate <= max ? null : { maxDate: { value: control.value } };
+    };
   }
 
   loadProducts(): void {
@@ -85,8 +103,9 @@ export class ProductComponent implements OnInit {
     this.modalTitle = 'Add Product';
     this.isEditMode = false;
     this.activeProductId = undefined;
-     this.productForm.reset({
-    gst: 18
+    this.productForm.reset({
+      gst: 18,
+      purchaseDate: this.today
     });
     this.productForm.markAsUntouched();
     this.productForm.markAsPristine();
@@ -102,7 +121,8 @@ export class ProductComponent implements OnInit {
       productId: product.productId,
       costPrice: product.costPrice,
       gst: product.gst,
-      quantity: product.quantity
+      quantity: product.quantity,
+      purchaseDate: product.purchaseDate
     });
     this.showProductModal = true;
   }
@@ -127,7 +147,8 @@ export class ProductComponent implements OnInit {
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
-        quantity: Number(formValue.quantity)
+        quantity: Number(formValue.quantity),
+        purchaseDate: formValue.purchaseDate
           }),
           'saveProduct'
         )
@@ -148,7 +169,8 @@ export class ProductComponent implements OnInit {
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
-        quantity: Number(formValue.quantity)
+        quantity: Number(formValue.quantity),
+        purchaseDate: formValue.purchaseDate
           }),
           'saveProduct'
         )

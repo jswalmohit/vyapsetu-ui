@@ -20,6 +20,11 @@
 
 .modal-dialog { z-index: 1060; }
 
+.modal-content {
+  background-color: #ffffff;
+  border: none;
+}
+
 .card { border: none; }
 
 @media (max-width: 767px) {
