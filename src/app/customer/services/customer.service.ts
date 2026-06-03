@@ -24,11 +24,8 @@ export class CustomerService {
   constructor(private http: HttpClient) {}
 
   // Search customers by phone number
-  // API: GET /api/customers/GetCustomerByPhone?phoneNumber={phoneNumber}
   getCustomerByPhone(phoneNumber: string): Observable<CustomerSearchResult> {
-    return this.http.get<CustomerSearchResult>(`${this.apiUrl}/GetCustomerByPhone`, {
-      params: { phoneNumber }
-    });
+    return this.http.get<CustomerSearchResult>(`${this.apiUrl}/phone/${phoneNumber}`);
   }
 
   // Create a new customer

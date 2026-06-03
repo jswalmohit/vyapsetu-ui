@@ -1,8 +1,9 @@
 import { Component, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LoaderComponent } from './shared/loader/loader.component';
 import { LoadingService } from './services/loading.service';
+import { AuthService } from './auth/auth.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -15,8 +16,19 @@ import { Observable } from 'rxjs';
 export class App {
   protected readonly title = signal('vyapsetu-ui');
   loading$: Observable<boolean>;
-  constructor(private loading: LoadingService) {
-    // expose raw loading state for header debug indicator
+  isAuthenticated$: Observable<boolean>;
+
+  constructor(
+    private loading: LoadingService,
+    private auth: AuthService,
+    private router: Router
+  ) {
     this.loading$ = this.loading.loading$;
+    this.isAuthenticated$ = this.auth.isAuthenticated$;
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/login']);
   }
 }
