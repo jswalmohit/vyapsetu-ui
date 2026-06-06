@@ -47,6 +47,12 @@
   border: none;
 }
 
+/* Increase width of large modals (line-items dialog) while keeping responsive */
+.custom-modal .modal-dialog.modal-lg {
+  max-width: 1500px;
+  width: 95vw;
+}
+
 .modal-header {
   padding: 1.5rem 1.5rem 0.5rem;
 }
@@ -62,6 +68,29 @@
 .line-items-table-wrapper {
   max-height: 400px;
   overflow-y: auto;
+}
+
+/* Narrow columns for numeric inputs to save horizontal space */
+.line-items-table-wrapper table thead th:nth-child(1),
+.line-items-table-wrapper table tbody td:nth-child(1) {
+  width: 120px;
+  max-width: 120px;
+}
+
+.line-items-table-wrapper table thead th:nth-child(2),
+.line-items-table-wrapper table tbody td:nth-child(2) {
+  width: 90px;
+  max-width: 90px;
+}
+
+.line-items-table-wrapper table thead th:nth-child(3),
+.line-items-table-wrapper table tbody td:nth-child(3) {
+  width: 100px;
+  max-width: 100px;
+}
+
+.line-items-table-wrapper .line-item-input {
+  padding: 0.25rem 0.4rem;
 }
 
 .line-item-input {

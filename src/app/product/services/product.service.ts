@@ -64,22 +64,22 @@ export class ProductService {
     return this.http.get<any>(`${environment.baseUrl}/api/LineItems/product/${encodeURIComponent(productId)}`);
   }
 
-  // Add a line item
-  // API: POST /api/LineItems
-  addLineItem(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.baseUrl}/api/LineItems`, data);
+  // Bulk create line items
+  // API: POST /api/LineItems/bulk
+  bulkCreateLineItems(data: any[]): Observable<any> {
+    return this.http.post<any>(`${environment.baseUrl}/api/LineItems/bulk`, data);
   }
 
-  // Update a line item
-  // API: PUT /api/LineItems/:id
-  updateLineItem(id: string, data: any): Observable<any> {
-    return this.http.put<any>(`${environment.baseUrl}/api/LineItems/${encodeURIComponent(id)}`, data);
+  // Bulk update line items
+  // API: PUT /api/LineItems/bulk
+  bulkUpdateLineItems(data: any[]): Observable<any> {
+    return this.http.put<any>(`${environment.baseUrl}/api/LineItems/bulk`, data);
   }
 
-  // Delete a line item
-  // API: DELETE /api/LineItems/:id
-  deleteLineItem(id: string): Observable<any> {
-    return this.http.delete<any>(`${environment.baseUrl}/api/LineItems/${encodeURIComponent(id)}`);
+  // Bulk delete line items
+  // API: DELETE /api/LineItems/bulk
+  bulkDeleteLineItems(ids: string[]): Observable<any> {
+    return this.http.request<any>('delete', `${environment.baseUrl}/api/LineItems/bulk`, { body: ids });
   }
 }
 

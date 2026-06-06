@@ -30,6 +30,7 @@ export class ProductComponent implements OnInit {
   lineItemsAdded = new Set<string>();
   lineItemsEdited = new Set<string>();
   lineItemsDeleted = new Set<string>();
+  lineItemsDirty = false;
   // Action-level loading observables (initialized in constructor)
   saveAction$ = null as unknown as import('rxjs').Observable<boolean>;
   deleteAction$ = null as unknown as import('rxjs').Observable<boolean>;
@@ -247,6 +248,7 @@ export class ProductComponent implements OnInit {
           this.lineItemsAdded.clear();
           this.lineItemsEdited.clear();
           this.lineItemsDeleted.clear();
+          this.lineItemsDirty = false;
           this.cd.detectChanges();
         },
         error: (error) => {
@@ -264,7 +266,7 @@ export class ProductComponent implements OnInit {
       id: tmpId,
       productId: this.selectedProduct?.productId ?? '',
       purchasePrice: 0,
-      gst: 0,
+      gst: 18,
       quantity: 0,
       purchaseDate: this.today,
       createdDate: new Date().toISOString(),
@@ -272,7 +274,8 @@ export class ProductComponent implements OnInit {
       sellerName: ''
     };
     this.lineItems.unshift(newRow);
-    this.lineItemsAdded.add(tmpId);
+    this.lineItemsAdded.add(String(tmpId));
+    this.lineItemsDirty = true;
     this.cd.detectChanges();
     // focus first input in the new row after render
     setTimeout(() => {
@@ -283,12 +286,13 @@ export class ProductComponent implements OnInit {
 
   onLineItemChange(item: any): void {
     if (!item) return;
+    this.lineItemsDirty = true;
     if (String(item.id).startsWith('tmp-')) {
-      this.lineItemsAdded.add(item.id);
+      this.lineItemsAdded.add(String(item.id));
     } else {
       const orig = this.lineItemsOriginal.find((o) => String(o.id) === String(item.id));
       if (!orig) {
-        this.lineItemsEdited.add(item.id);
+        this.lineItemsEdited.add(String(item.id));
       } else {
         const changed =
           orig.purchasePrice !== item.purchasePrice ||
@@ -297,46 +301,81 @@ export class ProductComponent implements OnInit {
           orig.purchaseDate !== item.purchaseDate ||
           orig.sellerGSTIN !== item.sellerGSTIN ||
           orig.sellerName !== item.sellerName;
-        if (changed) this.lineItemsEdited.add(item.id);
-        else this.lineItemsEdited.delete(item.id);
+        if (changed) this.lineItemsEdited.add(String(item.id));
+        else this.lineItemsEdited.delete(String(item.id));
       }
     }
   }
 
+  onNumberInput(event: any, item: any, field: string): void {
+    if (!item) return;
+    const input = event.target as HTMLInputElement;
+    const val = input.valueAsNumber;
+    const num = Number.isNaN(val) ? 0 : val;
+    item[field] = Math.max(0, num);
+    this.onLineItemChange(item);
+  }
+
   removeLineItemRow(item: any): void {
     if (!item) return;
+    this.lineItemsDirty = true;
     if (String(item.id).startsWith('tmp-')) {
       this.lineItems = this.lineItems.filter((i) => i.id !== item.id);
-      this.lineItemsAdded.delete(item.id);
+      this.lineItemsAdded.delete(String(item.id));
     } else {
       this.lineItems = this.lineItems.filter((i) => i.id !== item.id);
-      this.lineItemsDeleted.add(item.id);
-      this.lineItemsEdited.delete(item.id);
+      this.lineItemsDeleted.add(String(item.id));
+      this.lineItemsEdited.delete(String(item.id));
     }
   }
 
   hasLineItemChanges(): boolean {
-    return this.lineItemsAdded.size > 0 || this.lineItemsEdited.size > 0 || this.lineItemsDeleted.size > 0;
+    return this.lineItemsDirty || this.lineItemsAdded.size > 0 || this.lineItemsEdited.size > 0 || this.lineItemsDeleted.size > 0;
   }
 
   saveLineItems(): void {
-    const adds = this.lineItems.filter((i) => String(i.id).startsWith('tmp-'));
-    const edits = this.lineItemsOriginal.filter((orig) => this.lineItemsEdited.has(orig.id));
+    const adds = this.lineItems
+      .filter((i) => String(i.id).startsWith('tmp-'))
+      .map((item) => ({
+        productId: item.productId,
+        purchasePrice: item.purchasePrice,
+        gst: item.gst,
+        quantity: item.quantity,
+        purchaseDate: item.purchaseDate,
+        sellerGSTIN: item.sellerGSTIN,
+        sellerName: item.sellerName
+      }));
+
+    const edits = this.lineItems
+      .filter((item) => !String(item.id).startsWith('tmp-') && this.lineItemsEdited.has(String(item.id)))
+      .map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        purchasePrice: item.purchasePrice,
+        gst: item.gst,
+        quantity: item.quantity,
+        purchaseDate: item.purchaseDate,
+        sellerGSTIN: item.sellerGSTIN,
+        sellerName: item.sellerName
+      }));
+
     const deletes = Array.from(this.lineItemsDeleted);
 
-    const ops: any[] = [];
-    // deletes
-    deletes.forEach((id) => ops.push(this.productService.deleteLineItem(id)));
-    // updates
-    edits.forEach((it) => ops.push(this.productService.updateLineItem(it.id, it)));
-    // creates
-    adds.forEach((it) => ops.push(this.productService.addLineItem(it)));
+    const requests: any[] = [];
+    if (deletes.length > 0) {
+      requests.push(this.productService.bulkDeleteLineItems(deletes));
+    }
+    if (edits.length > 0) {
+      requests.push(this.productService.bulkUpdateLineItems(edits));
+    }
+    if (adds.length > 0) {
+      requests.push(this.productService.bulkCreateLineItems(adds));
+    }
 
-    if (ops.length === 0) return;
+    if (requests.length === 0) return;
 
-    this.loading.track(forkJoin(ops), 'saveLineItems').subscribe({
+    this.loading.track(forkJoin(requests), 'saveLineItems').subscribe({
       next: () => {
-        // reload
         if (this.selectedProduct) this.loadLineItems(this.selectedProduct.productId);
       },
       error: (err) => console.error('Error saving line items', err)

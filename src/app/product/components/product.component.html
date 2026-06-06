@@ -252,7 +252,7 @@
                         [value]="lineItem.purchasePrice"
                         min="0"
                         step="0.01"
-                        (input)="lineItem.purchasePrice = Number($any($event.target).value); onLineItemChange(lineItem)"
+                          (input)="onNumberInput($event, lineItem, 'purchasePrice')"
                       />
                     </td>
                     <td>
@@ -262,7 +262,7 @@
                         [value]="lineItem.gst"
                         min="0"
                         step="0.1"
-                        (input)="lineItem.gst = Number($any($event.target).value); onLineItemChange(lineItem)"
+                        (input)="onNumberInput($event, lineItem, 'gst')"
                       />
                     </td>
                     <td>
@@ -272,7 +272,7 @@
                         [value]="lineItem.quantity"
                         min="0"
                         step="1"
-                        (input)="lineItem.quantity = Number($any($event.target).value); onLineItemChange(lineItem)"
+                        (input)="onNumberInput($event, lineItem, 'quantity')"
                       />
                     </td>
                     <td>
