@@ -20,10 +20,14 @@ export class ProductComponent implements OnInit {
   activeProductId?: number;
   showProductModal = false;
   showDeleteModal = false;
+  showLineItemsModal = false;
   deleteTarget?: Product;
+  selectedProduct?: Product;
+  lineItems: any[] = [];
   // Action-level loading observables (initialized in constructor)
   saveAction$ = null as unknown as import('rxjs').Observable<boolean>;
   deleteAction$ = null as unknown as import('rxjs').Observable<boolean>;
+  loadLineItemsAction$ = null as unknown as import('rxjs').Observable<boolean>;
   today: string = '';
 
   constructor(
@@ -44,6 +48,7 @@ export class ProductComponent implements OnInit {
 
     this.saveAction$ = this.loading.actionStatus$('saveProduct');
     this.deleteAction$ = this.loading.actionStatus$('deleteProduct');
+    this.loadLineItemsAction$ = this.loading.actionStatus$('loadLineItems');
   }
 
   ngOnInit(): void {
@@ -211,5 +216,37 @@ export class ProductComponent implements OnInit {
   closeDeleteModal(): void {
     this.showDeleteModal = false;
     this.deleteTarget = undefined;
+  }
+
+  openLineItemsModal(product: Product): void {
+    this.selectedProduct = product;
+    this.lineItems = [];
+    this.showLineItemsModal = true;
+    this.loadLineItems(product.id);
+  }
+
+  loadLineItems(productId: number): void {
+    this.loading
+      .track(
+        this.productService.getLineItemsByProductId(productId),
+        'loadLineItems'
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.lineItems = response.data || [];
+          this.cd.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading line items:', error);
+          this.lineItems = [];
+          this.cd.detectChanges();
+        }
+      });
+  }
+
+  closeLineItemsModal(): void {
+    this.showLineItemsModal = false;
+    this.selectedProduct = undefined;
+    this.lineItems = [];
   }
 }

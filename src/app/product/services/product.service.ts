@@ -57,5 +57,13 @@ export class ProductService {
   deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  // Get line items for a product
+  // API: GET /api/LineItems?productId=:id
+  getLineItemsByProductId(productId: number): Observable<any> {
+    return this.http.get<any>(`${environment.baseUrl}/api/LineItems`, {
+      params: { productId: productId.toString() }
+    });
+  }
 }
 

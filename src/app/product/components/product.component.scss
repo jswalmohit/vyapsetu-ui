@@ -59,6 +59,19 @@
   padding: 0 1.5rem 1.5rem;
 }
 
+.line-items-table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.line-item-input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  padding: 0.35rem 0.5rem;
+}
+
 .invalid-feedback {
   display: block;
 }
