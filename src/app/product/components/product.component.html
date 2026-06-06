@@ -80,15 +80,113 @@
     </div>
   </div>
 
-  <app-product-add-modal
-    *ngIf="showProductModal"
-    [productForm]="productForm"
-    [modalTitle]="modalTitle"
-    [today]="today"
-    [saveAction$]="saveAction$"
-    (save)="saveProduct()"
-    (cancel)="closeProductModal()"
-  ></app-product-add-modal>
+  <div *ngIf="showProductModal" class="custom-modal">
+    <div class="modal-backdrop-custom"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg overflow-hidden">
+        <form [formGroup]="productForm" (ngSubmit)="saveProduct()">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h5 class="modal-title">{{ modalTitle }}</h5>
+              <p class="text-muted mb-0">Enter product details and save to add or update inventory.</p>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeProductModal()"></button>
+          </div>
+          <div class="modal-body pt-0">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Product Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="productName"
+                  [ngClass]="{ 'is-invalid': f.productName.invalid && (f.productName.touched || f.productName.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.productName.invalid && (f.productName.touched || f.productName.dirty)">
+                  Product Name is required.
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Product ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  formControlName="productId"
+                  [ngClass]="{ 'is-invalid': f.productId.invalid && (f.productId.touched || f.productId.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.productId.invalid && (f.productId.touched || f.productId.dirty)">
+                  Product ID is required.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Cost Price</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="costPrice"
+                  min="0"
+                  step="0.01"
+                  [ngClass]="{ 'is-invalid': f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty)">
+                  Cost Price is required and must be a positive number.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">GST %</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="gst"
+                  min="0"
+                  step="0.1"
+                  [ngClass]="{ 'is-invalid': f.gst.invalid && (f.gst.touched || f.gst.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.gst.invalid && (f.gst.touched || f.gst.dirty)">
+                  GST percentage is required and must be a valid number.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Quantity</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="quantity"
+                  min="0"
+                  step="1"
+                  [ngClass]="{ 'is-invalid': f.quantity.invalid && (f.quantity.touched || f.quantity.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.quantity.invalid && (f.quantity.touched || f.quantity.dirty)">
+                  Quantity is required and must be a non-negative number.
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Purchase Date</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  formControlName="purchaseDate"
+                  [max]="today"
+                  [ngClass]="{ 'is-invalid': f.purchaseDate.invalid && (f.purchaseDate.touched || f.purchaseDate.dirty) }"
+                />
+                <div class="invalid-feedback" *ngIf="f.purchaseDate.invalid && (f.purchaseDate.touched || f.purchaseDate.dirty)">
+                  <div *ngIf="f.purchaseDate.hasError('required')">Purchase Date is required.</div>
+                  <div *ngIf="f.purchaseDate.hasError('maxDate')">Purchase Date cannot be in the future.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary" (click)="closeProductModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="productForm.invalid || (saveAction$ | async)">
+              <span *ngIf="(saveAction$ | async)" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Save Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <div *ngIf="showDeleteModal" class="custom-modal">
     <div class="modal-backdrop-custom"></div>
@@ -112,12 +210,107 @@
     </div>
   </div>
 
-  <app-line-items-modal
-    *ngIf="showLineItemsModal"
-    [selectedProduct]="selectedProduct"
-    [lineItems]="lineItems"
-    [loadLineItemsAction$]="loadLineItemsAction$"
-    [today]="today"
-    (close)="closeLineItemsModal()"
-  ></app-line-items-modal>
+  <div *ngIf="showLineItemsModal" class="custom-modal">
+    <div class="modal-backdrop-custom"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title">Line Items - {{ selectedProduct?.productName }}</h5>
+          </div>
+          <button type="button" class="btn-close" aria-label="Close" (click)="closeLineItemsModal()"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <div *ngIf="(loadLineItemsAction$ | async); else lineItemsContent" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <ng-template #lineItemsContent>
+            <div class="table-responsive line-items-table-wrapper">
+              <table class="table table-borderless align-middle mb-0">
+                <thead>
+                  <tr class="text-muted small text-uppercase border-bottom">
+                    <th>Purchase Price</th>
+                    <th>GST %</th>
+                    <th>Quantity</th>
+                    <th>Purchase Date</th>
+                    <th>Seller Name</th>
+                    <th>Seller GSTIN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let lineItem of lineItems" class="line-item-row">
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.purchasePrice"
+                        min="0"
+                        step="0.01"
+                        (input)="lineItem.purchasePrice = Number($any($event.target).value)"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.gst"
+                        min="0"
+                        step="0.1"
+                        (input)="lineItem.gst = Number($any($event.target).value)"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.quantity"
+                        min="0"
+                        step="1"
+                        (input)="lineItem.quantity = Number($any($event.target).value)"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.purchaseDate | date:'yyyy-MM-dd'"
+                        [max]="today"
+                        (input)="lineItem.purchaseDate = $any($event.target).value"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.sellerName"
+                        (input)="lineItem.sellerName = $any($event.target).value"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm line-item-input"
+                        [value]="lineItem.sellerGSTIN"
+                        (input)="lineItem.sellerGSTIN = $any($event.target).value"
+                      />
+                    </td>
+                  </tr>
+                  <tr *ngIf="lineItems.length === 0">
+                    <td colspan="6" class="text-center py-5 text-muted">
+                      No line items found for this product.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-template>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary" (click)="closeLineItemsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

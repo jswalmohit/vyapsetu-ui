@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { Product } from '../models/product.model';
@@ -33,6 +33,7 @@ export class ProductComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
+    private cd: ChangeDetectorRef,
     @Inject(LoadingService) private loading: LoadingService
   ) {
     this.today = this.getTodayDateString();
@@ -78,9 +79,11 @@ export class ProductComponent implements OnInit {
       next: (products) => {
         this.products = products;
         this.applyFilter();
+        this.cd.detectChanges();
       },
       error: (error) => {
         console.error('Error loading products:', error);
+        this.cd.detectChanges();
       }
     });
   }
@@ -231,10 +234,12 @@ export class ProductComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           this.lineItems = response.data || [];
+          this.cd.detectChanges();
         },
         error: (error) => {
           console.error('Error loading line items:', error);
           this.lineItems = [];
+          this.cd.detectChanges();
         }
       });
   }
