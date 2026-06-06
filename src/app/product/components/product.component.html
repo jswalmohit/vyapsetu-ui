@@ -215,8 +215,11 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content rounded-4 shadow-lg overflow-hidden">
         <div class="modal-header border-0 pb-0">
-          <div>
-            <h5 class="modal-title">Line Items - {{ selectedProduct?.productName }}</h5>
+          <div class="d-flex align-items-center">
+            <h5 class="modal-title mb-0">Line Items - {{ selectedProduct?.productName }}</h5>
+            <button type="button" class="btn btn-sm btn-outline-success ms-3" title="Add Line Item" (click)="addLineItemRow()">
+              <i class="fa fa-plus"></i>
+            </button>
           </div>
           <button type="button" class="btn-close" aria-label="Close" (click)="closeLineItemsModal()"></button>
         </div>
@@ -237,6 +240,7 @@
                     <th>Purchase Date</th>
                     <th>Seller Name</th>
                     <th>Seller GSTIN</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -248,7 +252,7 @@
                         [value]="lineItem.purchasePrice"
                         min="0"
                         step="0.01"
-                        (input)="lineItem.purchasePrice = Number($any($event.target).value)"
+                        (input)="lineItem.purchasePrice = Number($any($event.target).value); onLineItemChange(lineItem)"
                       />
                     </td>
                     <td>
@@ -258,7 +262,7 @@
                         [value]="lineItem.gst"
                         min="0"
                         step="0.1"
-                        (input)="lineItem.gst = Number($any($event.target).value)"
+                        (input)="lineItem.gst = Number($any($event.target).value); onLineItemChange(lineItem)"
                       />
                     </td>
                     <td>
@@ -268,7 +272,7 @@
                         [value]="lineItem.quantity"
                         min="0"
                         step="1"
-                        (input)="lineItem.quantity = Number($any($event.target).value)"
+                        (input)="lineItem.quantity = Number($any($event.target).value); onLineItemChange(lineItem)"
                       />
                     </td>
                     <td>
@@ -277,7 +281,7 @@
                         class="form-control form-control-sm line-item-input"
                         [value]="lineItem.purchaseDate | date:'yyyy-MM-dd'"
                         [max]="today"
-                        (input)="lineItem.purchaseDate = $any($event.target).value"
+                        (input)="lineItem.purchaseDate = $any($event.target).value; onLineItemChange(lineItem)"
                       />
                     </td>
                     <td>
@@ -285,7 +289,7 @@
                         type="text"
                         class="form-control form-control-sm line-item-input"
                         [value]="lineItem.sellerName"
-                        (input)="lineItem.sellerName = $any($event.target).value"
+                        (input)="lineItem.sellerName = $any($event.target).value; onLineItemChange(lineItem)"
                       />
                     </td>
                     <td>
@@ -293,12 +297,17 @@
                         type="text"
                         class="form-control form-control-sm line-item-input"
                         [value]="lineItem.sellerGSTIN"
-                        (input)="lineItem.sellerGSTIN = $any($event.target).value"
+                        (input)="lineItem.sellerGSTIN = $any($event.target).value; onLineItemChange(lineItem)"
                       />
+                    </td>
+                    <td class="text-end">
+                      <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeLineItemRow(lineItem)">
+                        <i class="fa fa-trash"></i>
+                      </button>
                     </td>
                   </tr>
                   <tr *ngIf="lineItems.length === 0">
-                    <td colspan="6" class="text-center py-5 text-muted">
+                    <td colspan="7" class="text-center py-5 text-muted">
                       No line items found for this product.
                     </td>
                   </tr>
@@ -308,7 +317,11 @@
           </ng-template>
         </div>
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-secondary" (click)="closeLineItemsModal()">Close</button>
+            <button type="button" class="btn btn-secondary" (click)="closeLineItemsModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveLineItems()" [disabled]="!hasLineItemChanges() || (saveLineItemsAction$ | async)">
+              <span *ngIf="(saveLineItemsAction$ | async)" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Save
+            </button>
         </div>
       </div>
     </div>

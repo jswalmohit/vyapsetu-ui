@@ -59,11 +59,27 @@ export class ProductService {
   }
 
   // Get line items for a product
-  // API: GET /api/LineItems?productId=:id
-  getLineItemsByProductId(productId: number): Observable<any> {
-    return this.http.get<any>(`${environment.baseUrl}/api/LineItems`, {
-      params: { productId: productId.toString() }
-    });
+  // API: GET /api/LineItems/product/:productId
+  getLineItemsByProductId(productId: string): Observable<any> {
+    return this.http.get<any>(`${environment.baseUrl}/api/LineItems/product/${encodeURIComponent(productId)}`);
+  }
+
+  // Add a line item
+  // API: POST /api/LineItems
+  addLineItem(data: any): Observable<any> {
+    return this.http.post<any>(`${environment.baseUrl}/api/LineItems`, data);
+  }
+
+  // Update a line item
+  // API: PUT /api/LineItems/:id
+  updateLineItem(id: string, data: any): Observable<any> {
+    return this.http.put<any>(`${environment.baseUrl}/api/LineItems/${encodeURIComponent(id)}`, data);
+  }
+
+  // Delete a line item
+  // API: DELETE /api/LineItems/:id
+  deleteLineItem(id: string): Observable<any> {
+    return this.http.delete<any>(`${environment.baseUrl}/api/LineItems/${encodeURIComponent(id)}`);
   }
 }
 

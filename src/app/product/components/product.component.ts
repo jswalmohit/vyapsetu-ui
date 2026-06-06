@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ProductService } from '../services/product.service';
+import { forkJoin } from 'rxjs';
 import { Product } from '../models/product.model';
 import { LoadingService } from '../../services/loading.service';
 
@@ -24,10 +25,16 @@ export class ProductComponent implements OnInit {
   deleteTarget?: Product;
   selectedProduct?: Product;
   lineItems: any[] = [];
+  // change tracking for line items
+  lineItemsOriginal: any[] = [];
+  lineItemsAdded = new Set<string>();
+  lineItemsEdited = new Set<string>();
+  lineItemsDeleted = new Set<string>();
   // Action-level loading observables (initialized in constructor)
   saveAction$ = null as unknown as import('rxjs').Observable<boolean>;
   deleteAction$ = null as unknown as import('rxjs').Observable<boolean>;
   loadLineItemsAction$ = null as unknown as import('rxjs').Observable<boolean>;
+  saveLineItemsAction$ = null as unknown as import('rxjs').Observable<boolean>;
   today: string = '';
 
   constructor(
@@ -49,6 +56,7 @@ export class ProductComponent implements OnInit {
     this.saveAction$ = this.loading.actionStatus$('saveProduct');
     this.deleteAction$ = this.loading.actionStatus$('deleteProduct');
     this.loadLineItemsAction$ = this.loading.actionStatus$('loadLineItems');
+    this.saveLineItemsAction$ = this.loading.actionStatus$('saveLineItems');
   }
 
   ngOnInit(): void {
@@ -222,10 +230,10 @@ export class ProductComponent implements OnInit {
     this.selectedProduct = product;
     this.lineItems = [];
     this.showLineItemsModal = true;
-    this.loadLineItems(product.id);
+    // fetch using productId (string identifier expected by API)
+    this.loadLineItems(product.productId);
   }
-
-  loadLineItems(productId: number): void {
+  loadLineItems(productId: string): void {
     this.loading
       .track(
         this.productService.getLineItemsByProductId(productId),
@@ -234,14 +242,105 @@ export class ProductComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           this.lineItems = response.data || [];
+          // preserve original snapshot for change detection
+          this.lineItemsOriginal = this.lineItems.map((i: any) => ({ ...i }));
+          this.lineItemsAdded.clear();
+          this.lineItemsEdited.clear();
+          this.lineItemsDeleted.clear();
           this.cd.detectChanges();
         },
         error: (error) => {
           console.error('Error loading line items:', error);
           this.lineItems = [];
+          this.lineItemsOriginal = [];
           this.cd.detectChanges();
         }
       });
+  }
+
+  addLineItemRow(): void {
+    const tmpId = `tmp-${Date.now()}`;
+    const newRow = {
+      id: tmpId,
+      productId: this.selectedProduct?.productId ?? '',
+      purchasePrice: 0,
+      gst: 0,
+      quantity: 0,
+      purchaseDate: this.today,
+      createdDate: new Date().toISOString(),
+      sellerGSTIN: '',
+      sellerName: ''
+    };
+    this.lineItems.unshift(newRow);
+    this.lineItemsAdded.add(tmpId);
+    this.cd.detectChanges();
+    // focus first input in the new row after render
+    setTimeout(() => {
+      const el = document.querySelector('.line-item-row input');
+      try { (el as HTMLElement)?.focus(); } catch {}
+    }, 50);
+  }
+
+  onLineItemChange(item: any): void {
+    if (!item) return;
+    if (String(item.id).startsWith('tmp-')) {
+      this.lineItemsAdded.add(item.id);
+    } else {
+      const orig = this.lineItemsOriginal.find((o) => String(o.id) === String(item.id));
+      if (!orig) {
+        this.lineItemsEdited.add(item.id);
+      } else {
+        const changed =
+          orig.purchasePrice !== item.purchasePrice ||
+          orig.gst !== item.gst ||
+          orig.quantity !== item.quantity ||
+          orig.purchaseDate !== item.purchaseDate ||
+          orig.sellerGSTIN !== item.sellerGSTIN ||
+          orig.sellerName !== item.sellerName;
+        if (changed) this.lineItemsEdited.add(item.id);
+        else this.lineItemsEdited.delete(item.id);
+      }
+    }
+  }
+
+  removeLineItemRow(item: any): void {
+    if (!item) return;
+    if (String(item.id).startsWith('tmp-')) {
+      this.lineItems = this.lineItems.filter((i) => i.id !== item.id);
+      this.lineItemsAdded.delete(item.id);
+    } else {
+      this.lineItems = this.lineItems.filter((i) => i.id !== item.id);
+      this.lineItemsDeleted.add(item.id);
+      this.lineItemsEdited.delete(item.id);
+    }
+  }
+
+  hasLineItemChanges(): boolean {
+    return this.lineItemsAdded.size > 0 || this.lineItemsEdited.size > 0 || this.lineItemsDeleted.size > 0;
+  }
+
+  saveLineItems(): void {
+    const adds = this.lineItems.filter((i) => String(i.id).startsWith('tmp-'));
+    const edits = this.lineItemsOriginal.filter((orig) => this.lineItemsEdited.has(orig.id));
+    const deletes = Array.from(this.lineItemsDeleted);
+
+    const ops: any[] = [];
+    // deletes
+    deletes.forEach((id) => ops.push(this.productService.deleteLineItem(id)));
+    // updates
+    edits.forEach((it) => ops.push(this.productService.updateLineItem(it.id, it)));
+    // creates
+    adds.forEach((it) => ops.push(this.productService.addLineItem(it)));
+
+    if (ops.length === 0) return;
+
+    this.loading.track(forkJoin(ops), 'saveLineItems').subscribe({
+      next: () => {
+        // reload
+        if (this.selectedProduct) this.loadLineItems(this.selectedProduct.productId);
+      },
+      error: (err) => console.error('Error saving line items', err)
+    });
   }
 
   closeLineItemsModal(): void {
