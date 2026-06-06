@@ -1,0 +1,93 @@
+<div class="line-item-editor">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="mb-0">{{ title }}</h6>
+    <button *ngIf="canAdd" type="button" class="btn btn-sm btn-outline-success" (click)="addLineItem.emit()" title="Add Line Item">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+
+  <div class="table-responsive line-items-table-wrapper">
+    <table class="table table-borderless align-middle mb-0">
+      <thead>
+        <tr class="text-muted small text-uppercase border-bottom">
+          <th>Purchase Price</th>
+          <th>GST %</th>
+          <th>Quantity</th>
+          <th>Purchase Date</th>
+          <th>Seller Name</th>
+          <th>Seller GSTIN</th>
+          <th *ngIf="showRemoveControls"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lineItem of lineItems; trackBy: trackById" class="line-item-row">
+          <td>
+            <input
+              type="number"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.purchasePrice"
+              min="0"
+              step="0.01"
+              (input)="onNumberChange($any($event.target).valueAsNumber, lineItem, 'purchasePrice')"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.gst"
+              min="0"
+              step="0.1"
+              (input)="onNumberChange($any($event.target).valueAsNumber, lineItem, 'gst')"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.quantity"
+              min="0"
+              step="1"
+              (input)="onNumberChange($any($event.target).valueAsNumber, lineItem, 'quantity')"
+            />
+          </td>
+          <td>
+            <input
+              type="date"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.purchaseDate | date:'yyyy-MM-dd'"
+              [max]="today"
+              (input)="onTextChange($any($event.target).value, lineItem, 'purchaseDate')"
+            />
+          </td>
+          <td>
+            <input
+              type="text"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.sellerName"
+              (input)="onTextChange($any($event.target).value, lineItem, 'sellerName')"
+            />
+          </td>
+          <td>
+            <input
+              type="text"
+              class="form-control form-control-sm line-item-input"
+              [value]="lineItem.sellerGSTIN"
+              (input)="onTextChange($any($event.target).value, lineItem, 'sellerGSTIN')"
+            />
+          </td>
+          <td class="text-end" *ngIf="showRemoveControls">
+            <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeLineItem.emit(lineItem)">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="lineItems.length === 0">
+          <td colspan="7" class="text-center py-5 text-muted">
+            No line items available. Click the plus button to add one.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

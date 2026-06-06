@@ -175,6 +175,18 @@
                 </div>
               </div>
             </div>
+            <div *ngIf="!isEditMode" class="mt-4">
+              <app-line-item-editor
+                [lineItems]="lineItems"
+                [today]="today"
+                [canAdd]="true"
+                [showRemoveControls]="true"
+                title="Product Line Items"
+                (addLineItem)="addLineItemRow()"
+                (lineItemChange)="onLineItemChange($event)"
+                (removeLineItem)="removeLineItemRow($event)"
+              ></app-line-item-editor>
+            </div>
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-secondary" (click)="closeProductModal()">Cancel</button>
@@ -230,90 +242,16 @@
             </div>
           </div>
           <ng-template #lineItemsContent>
-            <div class="table-responsive line-items-table-wrapper">
-              <table class="table table-borderless align-middle mb-0">
-                <thead>
-                  <tr class="text-muted small text-uppercase border-bottom">
-                    <th>Purchase Price</th>
-                    <th>GST %</th>
-                    <th>Quantity</th>
-                    <th>Purchase Date</th>
-                    <th>Seller Name</th>
-                    <th>Seller GSTIN</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let lineItem of lineItems" class="line-item-row">
-                    <td>
-                      <input
-                        type="number"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.purchasePrice"
-                        min="0"
-                        step="0.01"
-                          (input)="onNumberInput($event, lineItem, 'purchasePrice')"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.gst"
-                        min="0"
-                        step="0.1"
-                        (input)="onNumberInput($event, lineItem, 'gst')"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.quantity"
-                        min="0"
-                        step="1"
-                        (input)="onNumberInput($event, lineItem, 'quantity')"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="date"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.purchaseDate | date:'yyyy-MM-dd'"
-                        [max]="today"
-                        (input)="lineItem.purchaseDate = $any($event.target).value; onLineItemChange(lineItem)"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.sellerName"
-                        (input)="lineItem.sellerName = $any($event.target).value; onLineItemChange(lineItem)"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        class="form-control form-control-sm line-item-input"
-                        [value]="lineItem.sellerGSTIN"
-                        (input)="lineItem.sellerGSTIN = $any($event.target).value; onLineItemChange(lineItem)"
-                      />
-                    </td>
-                    <td class="text-end">
-                      <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeLineItemRow(lineItem)">
-                        <i class="fa fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr *ngIf="lineItems.length === 0">
-                    <td colspan="7" class="text-center py-5 text-muted">
-                      No line items found for this product.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <app-line-item-editor
+              [lineItems]="lineItems"
+              [today]="today"
+              [canAdd]="true"
+              [showRemoveControls]="true"
+              title="Line Items"
+              (addLineItem)="addLineItemRow()"
+              (lineItemChange)="onLineItemChange($event)"
+              (removeLineItem)="removeLineItemRow($event)"
+            ></app-line-item-editor>
           </ng-template>
         </div>
         <div class="modal-footer border-0 pt-0">

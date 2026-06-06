@@ -1,7 +1,8 @@
 import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ProductService } from '../services/product.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { Product } from '../models/product.model';
 import { LoadingService } from '../../services/loading.service';
 
@@ -123,6 +124,12 @@ export class ProductComponent implements OnInit {
     });
     this.productForm.markAsUntouched();
     this.productForm.markAsPristine();
+    this.lineItems = [];
+    this.lineItemsOriginal = [];
+    this.lineItemsAdded.clear();
+    this.lineItemsEdited.clear();
+    this.lineItemsDeleted.clear();
+    this.lineItemsDirty = false;
     this.showProductModal = true;
   }
 
@@ -143,6 +150,12 @@ export class ProductComponent implements OnInit {
 
   closeProductModal(): void {
     this.showProductModal = false;
+    this.lineItems = [];
+    this.lineItemsOriginal = [];
+    this.lineItemsAdded.clear();
+    this.lineItemsEdited.clear();
+    this.lineItemsDeleted.clear();
+    this.lineItemsDirty = false;
   }
 
   saveProduct(): void {
@@ -157,12 +170,12 @@ export class ProductComponent implements OnInit {
       this.loading
         .track(
           this.productService.updateProduct(this.activeProductId, {
-        productName: formValue.productName,
-        productId: formValue.productId,
-        costPrice: Number(formValue.costPrice),
-        gst: Number(formValue.gst),
-        quantity: Number(formValue.quantity),
-        purchaseDate: formValue.purchaseDate
+            productName: formValue.productName,
+            productId: formValue.productId,
+            costPrice: Number(formValue.costPrice),
+            gst: Number(formValue.gst),
+            quantity: Number(formValue.quantity),
+            purchaseDate: formValue.purchaseDate
           }),
           'saveProduct'
         )
@@ -176,16 +189,35 @@ export class ProductComponent implements OnInit {
           }
         });
     } else {
-      this.loading
-        .track(
-          this.productService.addProduct({
+      const newProductRequest = this.productService.addProduct({
         productName: formValue.productName,
         productId: formValue.productId,
         costPrice: Number(formValue.costPrice),
         gst: Number(formValue.gst),
         quantity: Number(formValue.quantity),
         purchaseDate: formValue.purchaseDate
-          }),
+      });
+
+      this.loading
+        .track(
+          newProductRequest.pipe(
+            switchMap((createdProduct) => {
+              const createPayload = this.lineItems
+                .filter((item) => String(item.id).startsWith('tmp-'))
+                .map((item) => ({
+                  productId: createdProduct.productId || formValue.productId,
+                  purchasePrice: item.purchasePrice,
+                  gst: item.gst,
+                  quantity: item.quantity,
+                  purchaseDate: item.purchaseDate,
+                  sellerGSTIN: item.sellerGSTIN,
+                  sellerName: item.sellerName
+                }));
+              return createPayload.length > 0
+                ? this.productService.bulkCreateLineItems(createPayload).pipe(switchMap(() => of(createdProduct)))
+                : of(createdProduct);
+            })
+          ),
           'saveProduct'
         )
         .subscribe({
@@ -262,9 +294,10 @@ export class ProductComponent implements OnInit {
 
   addLineItemRow(): void {
     const tmpId = `tmp-${Date.now()}`;
+    const currentProductId = this.selectedProduct?.productId ?? this.productForm.value.productId ?? '';
     const newRow = {
       id: tmpId,
-      productId: this.selectedProduct?.productId ?? '',
+      productId: currentProductId,
       purchasePrice: 0,
       gst: 18,
       quantity: 0,
@@ -277,7 +310,6 @@ export class ProductComponent implements OnInit {
     this.lineItemsAdded.add(String(tmpId));
     this.lineItemsDirty = true;
     this.cd.detectChanges();
-    // focus first input in the new row after render
     setTimeout(() => {
       const el = document.querySelector('.line-item-row input');
       try { (el as HTMLElement)?.focus(); } catch {}

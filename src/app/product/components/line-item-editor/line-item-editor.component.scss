@@ -1,0 +1,10 @@
+.line-item-editor {
+  .line-items-table-wrapper {
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .line-item-input {
+    min-width: 110px;
+  }
+}
