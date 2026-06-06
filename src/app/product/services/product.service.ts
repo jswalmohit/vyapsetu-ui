@@ -57,5 +57,29 @@ export class ProductService {
   deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  // Get line items for a product
+  // API: GET /api/LineItems/product/:productId
+  getLineItemsByProductId(productId: string): Observable<any> {
+    return this.http.get<any>(`${environment.baseUrl}/api/LineItems/product/${encodeURIComponent(productId)}`);
+  }
+
+  // Bulk create line items
+  // API: POST /api/LineItems/bulk
+  bulkCreateLineItems(data: any[]): Observable<any> {
+    return this.http.post<any>(`${environment.baseUrl}/api/LineItems/bulk`, data);
+  }
+
+  // Bulk update line items
+  // API: PUT /api/LineItems/bulk
+  bulkUpdateLineItems(data: any[]): Observable<any> {
+    return this.http.put<any>(`${environment.baseUrl}/api/LineItems/bulk`, data);
+  }
+
+  // Bulk delete line items
+  // API: DELETE /api/LineItems/bulk
+  bulkDeleteLineItems(ids: string[]): Observable<any> {
+    return this.http.request<any>('delete', `${environment.baseUrl}/api/LineItems/bulk`, { body: ids });
+  }
 }
 

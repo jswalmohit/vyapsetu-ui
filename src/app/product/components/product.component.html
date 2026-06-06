@@ -38,10 +38,7 @@
                 <tr class="text-muted small text-uppercase border-bottom">
                   <th>Product Name</th>
                   <th>Product ID</th>
-                  <th>Cost Price</th>
                   <th>GST %</th>
-                  <th>Quantity</th>
-                  <th>Purchase Date</th>
                   <th class="text-end">Actions</th>
                 </tr>
               </thead>
@@ -51,13 +48,13 @@
                     <div class="fw-semibold">{{ product.productName }}</div>
                   </td>
                   <td>{{ product.productId }}</td>
-                  <td>{{ product.costPrice | currency:'INR':'symbol':'1.2-2' }}</td>
                   <td>{{ product.gst }}%</td>
-                  <td>{{ product.quantity }}</td>
-                  <td>{{ product.purchaseDate | date:'dd-MMM-yyyy' }}</td>
                   <td class="text-end">
                     <button class="btn btn-outline-secondary btn-sm me-2" type="button" (click)="openEditProduct(product)">
                       <i class="fa fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-info btn-sm me-2" type="button" (click)="openLineItemsModal(product)" title="View Line Items">
+                      <i class="fa fa-list"></i>
                     </button>
                     <button class="btn btn-outline-danger btn-sm" type="button" (click)="confirmDelete(product)">
                       <i class="fa fa-trash"></i>
@@ -65,7 +62,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="filteredProducts.length === 0">
-                  <td colspan="7" class="text-center py-5 text-muted">
+                  <td colspan="4" class="text-center py-5 text-muted">
                     No products match your search. Try a different term or add a new product.
                   </td>
                 </tr>
@@ -85,13 +82,12 @@
           <div class="modal-header border-0 pb-0">
             <div>
               <h5 class="modal-title">{{ modalTitle }}</h5>
-              <p class="text-muted mb-0">Enter product details and save to add or update inventory.</p>
             </div>
             <button type="button" class="btn-close" aria-label="Close" (click)="closeProductModal()"></button>
           </div>
           <div class="modal-body pt-0">
             <div class="row g-3">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-7">
                 <label class="form-label">Product Name</label>
                 <input
                   type="text"
@@ -103,7 +99,7 @@
                   Product Name is required.
                 </div>
               </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <label class="form-label">Product ID</label>
                 <input
                   type="text"
@@ -115,21 +111,7 @@
                   Product ID is required.
                 </div>
               </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label">Cost Price</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  formControlName="costPrice"
-                  min="0"
-                  step="0.01"
-                  [ngClass]="{ 'is-invalid': f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty) }"
-                />
-                <div class="invalid-feedback" *ngIf="f.costPrice.invalid && (f.costPrice.touched || f.costPrice.dirty)">
-                  Cost Price is required and must be a positive number.
-                </div>
-              </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-1">
                 <label class="form-label">GST %</label>
                 <input
                   type="number"
@@ -143,34 +125,18 @@
                   GST percentage is required and must be a valid number.
                 </div>
               </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label">Quantity</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  formControlName="quantity"
-                  min="0"
-                  step="1"
-                  [ngClass]="{ 'is-invalid': f.quantity.invalid && (f.quantity.touched || f.quantity.dirty) }"
-                />
-                <div class="invalid-feedback" *ngIf="f.quantity.invalid && (f.quantity.touched || f.quantity.dirty)">
-                  Quantity is required and must be a non-negative number.
-                </div>
-              </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label">Purchase Date</label>
-                <input
-                  type="date"
-                  class="form-control"
-                  formControlName="purchaseDate"
-                  [max]="today"
-                  [ngClass]="{ 'is-invalid': f.purchaseDate.invalid && (f.purchaseDate.touched || f.purchaseDate.dirty) }"
-                />
-                <div class="invalid-feedback" *ngIf="f.purchaseDate.invalid && (f.purchaseDate.touched || f.purchaseDate.dirty)">
-                  <div *ngIf="f.purchaseDate.hasError('required')">Purchase Date is required.</div>
-                  <div *ngIf="f.purchaseDate.hasError('maxDate')">Purchase Date cannot be in the future.</div>
-                </div>
-              </div>
+            </div>
+            <div *ngIf="!isEditMode" class="mt-4">
+              <app-line-item-editor
+                [lineItems]="lineItems"
+                [today]="today"
+                [canAdd]="true"
+                [showRemoveControls]="true"
+                title="Product Line Items"
+                (addLineItem)="addLineItemRow()"
+                (lineItemChange)="onLineItemChange($event)"
+                (removeLineItem)="removeLineItemRow($event)"
+              ></app-line-item-editor>
             </div>
           </div>
           <div class="modal-footer border-0 pt-0">
@@ -202,6 +168,49 @@
               Delete
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showLineItemsModal" class="custom-modal">
+    <div class="modal-backdrop-custom"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 pb-0">
+          <div class="d-flex align-items-center">
+            <h5 class="modal-title mb-0">Line Items - {{ selectedProduct?.productName }}</h5>
+            <button type="button" class="btn btn-sm btn-outline-success ms-3" title="Add Line Item" (click)="addLineItemRow()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+          <button type="button" class="btn-close" aria-label="Close" (click)="closeLineItemsModal()"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <div *ngIf="(loadLineItemsAction$ | async); else lineItemsContent" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <ng-template #lineItemsContent>
+            <app-line-item-editor
+              [lineItems]="lineItems"
+              [today]="today"
+              [canAdd]="true"
+              [showRemoveControls]="true"
+              title="Line Items"
+              (addLineItem)="addLineItemRow()"
+              (lineItemChange)="onLineItemChange($event)"
+              (removeLineItem)="removeLineItemRow($event)"
+            ></app-line-item-editor>
+          </ng-template>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary" (click)="closeLineItemsModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveLineItems()" [disabled]="!hasLineItemChanges() || (saveLineItemsAction$ | async)">
+              <span *ngIf="(saveLineItemsAction$ | async)" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Save
+            </button>
         </div>
       </div>
     </div>

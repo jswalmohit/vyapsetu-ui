@@ -17,7 +17,11 @@ describe('ProductComponent', () => {
       getProducts: vi.fn(),
       addProduct: vi.fn(),
       updateProduct: vi.fn(),
-      deleteProduct: vi.fn()
+      deleteProduct: vi.fn(),
+      getLineItemsByProductId: vi.fn(),
+      bulkCreateLineItems: vi.fn(),
+      bulkUpdateLineItems: vi.fn(),
+      bulkDeleteLineItems: vi.fn()
     };
     productService.getProducts.mockReturnValue(of([]));
 
@@ -117,5 +121,137 @@ describe('ProductComponent', () => {
     expect(productService.deleteProduct).toHaveBeenCalledWith(6);
     expect(component.loadProducts).toHaveBeenCalled();
     expect(component.showDeleteModal).toBe(false);
+  });
+
+  it('should open line items modal and load items', () => {
+    const product = { id: 10, productName: 'LProd', productId: 'LP10' };
+    productService.getLineItemsByProductId = vi.fn().mockReturnValue(of({ success: true, data: [] }));
+    vi.spyOn(component, 'loadLineItems');
+
+    component.openLineItemsModal(product as any);
+
+    expect(component.showLineItemsModal).toBe(true);
+    expect(component.selectedProduct).toBe(product);
+    expect(component.loadLineItems).toHaveBeenCalledWith('LP10');
+  });
+
+  it('should add a new line item and default GST to 18 and prevent duplicate unmodified temp rows', () => {
+    component.selectedProduct = { productId: 'P1' } as any;
+    component.lineItems = [];
+
+    component.addLineItemRow();
+    expect(component.lineItems.length).toBe(1);
+    expect(component.lineItems[0].gst).toBe(18);
+
+    // calling again without modifying should not add another temp row
+    component.addLineItemRow();
+    expect(component.lineItems.length).toBe(1);
+
+    // modify the temp row
+    const tmp = component.lineItems[0];
+    component.onNumberInput({ target: { valueAsNumber: 5 } }, tmp, 'purchasePrice');
+    expect(component.hasLineItemChanges()).toBe(true);
+
+    // now adding should create another
+    component.addLineItemRow();
+    expect(component.lineItems.length).toBe(2);
+  });
+
+  it('should clamp numeric inputs to >= 0 and mark dirty', () => {
+    component.selectedProduct = { productId: 'P2' } as any;
+    component.lineItems = [];
+    component.addLineItemRow();
+    const r = component.lineItems[0];
+
+    // simulate negative input
+    component.onNumberInput({ target: { valueAsNumber: -10 } }, r, 'quantity');
+    expect(r.quantity).toBe(0);
+    expect(component.hasLineItemChanges()).toBe(true);
+  });
+
+  it('should call bulk create on save for new rows', () => {
+    component.selectedProduct = { productId: 'P3' } as any;
+    component.lineItems = [];
+    component.addLineItemRow();
+    const r = component.lineItems[0];
+    component.onNumberInput({ target: { valueAsNumber: 50 } }, r, 'purchasePrice');
+    component.onNumberInput({ target: { valueAsNumber: 2 } }, r, 'quantity');
+
+    productService.bulkCreateLineItems.mockReturnValue(of({ success: true }));
+    vi.spyOn(component, 'loadLineItems');
+
+    component.saveLineItems();
+
+    expect(productService.bulkCreateLineItems).toHaveBeenCalledWith([
+      expect.objectContaining({
+        productId: 'P3',
+        purchasePrice: 50,
+        gst: 18,
+        quantity: 2
+      })
+    ]);
+    expect(component.loadLineItems).toHaveBeenCalled();
+  });
+
+  it('should remove temporary line item row and delete existing rows correctly', () => {
+    const tempRow = { id: 'tmp-1', productId: 'P4', purchasePrice: 0, gst: 18, quantity: 0, purchaseDate: component.today, sellerGSTIN: '', sellerName: '' };
+    const existingRow = { id: 'uuid-1', productId: 'P4', purchasePrice: 10, gst: 18, quantity: 1, purchaseDate: component.today, sellerGSTIN: 'GST', sellerName: 'Seller' };
+    component.lineItems = [tempRow, existingRow];
+    component.lineItemsAdded.add(String(tempRow.id));
+
+    component.removeLineItemRow(tempRow);
+    expect(component.lineItems.find((i: any) => i.id === tempRow.id)).toBeUndefined();
+    expect(component.lineItemsAdded.has(String(tempRow.id))).toBe(false);
+
+    component.removeLineItemRow(existingRow);
+    expect(component.lineItems.find((i: any) => i.id === existingRow.id)).toBeUndefined();
+    expect(component.lineItemsDeleted.has(String(existingRow.id))).toBe(true);
+  });
+
+  it('should update edited sets and remove edit flag when item returns to original value', () => {
+    const original = { id: 'uuid-2', productId: 'P5', purchasePrice: 10, gst: 18, quantity: 1, purchaseDate: '2026-06-02', sellerGSTIN: 'GST', sellerName: 'Seller' };
+    component.lineItemsOriginal = [ { ...original } ];
+    component.lineItems = [ { ...original } ];
+
+    component.onLineItemChange(component.lineItems[0]);
+    expect(component.lineItemsEdited.size).toBe(0);
+
+    component.onNumberInput({ target: { valueAsNumber: 20 } }, component.lineItems[0], 'purchasePrice');
+    expect(component.lineItemsEdited.has('uuid-2')).toBe(true);
+
+    component.lineItems[0].purchasePrice = 10;
+    component.onLineItemChange(component.lineItems[0]);
+    expect(component.lineItemsEdited.has('uuid-2')).toBe(false);
+  });
+
+  it('should call bulk update and bulk delete on save for edited and deleted rows', () => {
+    component.selectedProduct = { productId: 'P6' } as any;
+    const editedRow = { id: 'uuid-3', productId: 'P6', purchasePrice: 10, gst: 18, quantity: 1, purchaseDate: component.today, sellerGSTIN: 'GST', sellerName: 'Seller' };
+    const deletedId = 'uuid-4';
+    component.lineItems = [editedRow];
+    component.lineItemsEdited.add(String(editedRow.id));
+    component.lineItemsDeleted.add(deletedId);
+
+    productService.bulkUpdateLineItems.mockReturnValue(of({ success: true }));
+    productService.bulkDeleteLineItems.mockReturnValue(of({ success: true }));
+    vi.spyOn(component, 'loadLineItems');
+
+    component.saveLineItems();
+
+    expect(productService.bulkUpdateLineItems).toHaveBeenCalledWith([
+      expect.objectContaining({ id: editedRow.id, purchasePrice: 10 })
+    ]);
+    expect(productService.bulkDeleteLineItems).toHaveBeenCalledWith([deletedId]);
+    expect(component.loadLineItems).toHaveBeenCalled();
+  });
+
+  it('should clear line items and original state on load failure', () => {
+    productService.getLineItemsByProductId.mockReturnValue(of({ success: false, data: null }));
+
+    component.loadLineItems('P7');
+
+    expect(component.lineItems).toEqual([]);
+    expect(component.lineItemsOriginal).toEqual([]);
+    expect(component.lineItemsDirty).toBe(false);
   });
 });
