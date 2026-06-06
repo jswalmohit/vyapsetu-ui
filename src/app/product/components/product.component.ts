@@ -46,13 +46,14 @@ export class ProductComponent implements OnInit {
     @Inject(LoadingService) private loading: LoadingService
   ) {
     this.today = this.getTodayDateString();
+    //TODO: remove cost price, quantity and purchase date
     this.productForm = this.fb.group({
       productName: ['', Validators.required],
       productId: ['', Validators.required],
-      costPrice: [null, [Validators.required, Validators.min(0)]],
+      costPrice: [0],
       gst: [18, [Validators.required, Validators.min(0)]],
-      quantity: [null, [Validators.required, Validators.min(0)]],
-      purchaseDate: [this.today, [Validators.required, this.maxDateValidator(this.today)]]
+      quantity: [0],
+      purchaseDate: [this.today]
     });
 
     this.saveAction$ = this.loading.actionStatus$('saveProduct');
@@ -118,8 +119,11 @@ export class ProductComponent implements OnInit {
     this.modalTitle = 'Add Product';
     this.isEditMode = false;
     this.activeProductId = undefined;
+        //TODO: remove cost price, quantity and purchase date
     this.productForm.reset({
       gst: 18,
+      costPrice: 0,
+      quantity: 0,
       purchaseDate: this.today
     });
     this.productForm.markAsUntouched();
