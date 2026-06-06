@@ -1,6 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { forkJoin, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
